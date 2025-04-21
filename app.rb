@@ -1,6 +1,7 @@
 require "sinatra"
 require "sinatra/reloader"
 require "http"
+require "dotenv/load"
 
 get("/") do
   api_url = "https://api.exchangerate.host/list?access_key=#{ENV.fetch("API_KEY")}"
@@ -14,16 +15,40 @@ get("/") do
   # Convert the string to JSON
   @parsed_data = JSON.parse(@raw_string)
 
-  erb(:homepage)
+  @currencies = @parsed_data.fetch("currencies")
 
-  # In the view template, embed the @parsed_data variable to
-  # see what you're working with.
+  erb(:homepage)
+end
+
+get("/:from_currency") do
+  @original_currency = params.fetch("from_currency")
   
-  # From there, use your Hash/Array skills to make the homepage 
-  # match the target.
+  api_url = "https://api.exchangerate.host/list?access_key=#{ENV.fetch("API_KEY")}"
+
+  @raw_response = HTTP.get(api_url)
+
+  @raw_string = @raw_response.to_s
+
+  @parsed_data = JSON.parse(@raw_string)
+
+  @currencies = @parsed_data.fetch("currencies")
+
+  erb(:from_currency)
+end
+
+get("/:from_currency/:to_currency") do
+  @original_currency = params.fetch("from_currency")
+  @destination_currency = params.fetch("to_currency")
+
+  api_url = "https://api.exchangerate.host/convert?access_key=#{ENV.fetch("API_KEY")}&from=#{@original_currency}&to=#{@destination_currency}&amount=1"
   
-  # Remember to Make The Invisible Visible — View Source in 
-  # Chrome to see what your templates are actually outputting, 
-  # and embed as many instance variables as you need to (this 
-  # is the new equivalent of pretty-printing everything).
+  @raw_response = HTTP.get(api_url)
+
+  @raw_string = @raw_response.to_s
+
+  @parsed_data = JSON.parse(@raw_string)
+
+  @rate = @parsed_data.fetch("result")
+  
+  erb(:to_currency)
 end
